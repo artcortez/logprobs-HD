@@ -1,4 +1,5 @@
 import os
+import math
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_file
@@ -18,10 +19,10 @@ if not HF_TOKEN:
         "HF_TOKEN não encontrado no arquivo .env"
     )
 
-MODEL = "Qwen/Qwen3-4B-Instruct-2507"
+MODEL = "Qwen/Qwen3-32B"
 
 client = InferenceClient(
-    provider="auto",
+    provider="nscale",
     api_key=HF_TOKEN
 )
 
@@ -34,7 +35,22 @@ app = Flask(__name__)
 
 @app.route("/")
 def index():
-    return send_file("resultado_logprobs.html")
+
+    return send_file(
+        "resultado_logprobs.html"
+    )
+
+
+# ============================================================
+# CONVERTER LOGPROB EM PROBABILIDADE
+# ============================================================
+
+def logprob_para_probabilidade(logprob):
+
+    if logprob is None:
+        return None
+
+    return math.exp(logprob)
 
 
 # ============================================================
@@ -58,7 +74,7 @@ def perguntar():
 
 
     # ========================================================
-    # DOCUMENTO — AGORA É OPCIONAL
+    # DOCUMENTO — OPCIONAL
     # ========================================================
 
     arquivo = request.files.get(
@@ -120,6 +136,9 @@ Se a pergunta não puder ser respondida com base
 na fonte, diga claramente que essa informação
 não está presente no documento.
 
+Não mencione exemplos históricos externos para
+explicar aquilo que não está presente na fonte.
+
 FONTE HISTÓRICA
 ==================================================
 
@@ -144,7 +163,9 @@ PERGUNTA
             "Não utilize listas com hífens. "
             "Quando houver uma fonte fornecida, "
             "utilize exclusivamente as informações "
-            "presentes nessa fonte."
+            "presentes nessa fonte. "
+            "Não acrescente exemplos históricos "
+            "externos à fonte."
         )
 
 
@@ -171,7 +192,7 @@ PERGUNTA
 
 
     # ========================================================
-    # CONSULTAR QWEN
+    # CONSULTAR QWEN3-32B
     # ========================================================
 
     try:
@@ -194,11 +215,15 @@ PERGUNTA
 
             ],
 
-            max_tokens=300,
+            max_tokens=1000,
 
             logprobs=True,
 
-            top_logprobs=5
+            top_logprobs=5,
+
+            extra_body={
+                "enable_thinking": False
+            }
 
         )
 
@@ -214,11 +239,10 @@ PERGUNTA
 
 
     # ========================================================
-    # RESPOSTA
+    # RESPOSTA PÚBLICA
     # ========================================================
 
     escolha = resposta.choices[0]
-
 
     texto_resposta = (
         escolha.message.content
@@ -245,11 +269,10 @@ PERGUNTA
 
 
     # ========================================================
-    # LOGPROBS
+    # EXTRAIR TODOS OS LOGPROBS
     # ========================================================
 
-    tokens = []
-
+    tokens_completos = []
 
     logprobs = escolha.logprobs
 
@@ -281,7 +304,6 @@ PERGUNTA
 
             alternativas = []
 
-
             top_logprobs = getattr(
                 item,
                 "top_logprobs",
@@ -293,26 +315,36 @@ PERGUNTA
 
                 for alternativa in top_logprobs:
 
+                    alt_token = getattr(
+                        alternativa,
+                        "token",
+                        ""
+                    )
+
+                    alt_logprob = getattr(
+                        alternativa,
+                        "logprob",
+                        None
+                    )
+
+
                     alternativas.append({
 
                         "token":
-                            getattr(
-                                alternativa,
-                                "token",
-                                ""
-                            ),
+                            alt_token,
 
                         "logprob":
-                            getattr(
-                                alternativa,
-                                "logprob",
-                                None
+                            alt_logprob,
+
+                        "probabilidade":
+                            logprob_para_probabilidade(
+                                alt_logprob
                             )
 
                     })
 
 
-            tokens.append({
+            tokens_completos.append({
 
                 "token":
                     token_texto,
@@ -320,10 +352,128 @@ PERGUNTA
                 "logprob":
                     logprob,
 
+                "probabilidade":
+                    logprob_para_probabilidade(
+                        logprob
+                    ),
+
                 "alternativas":
                     alternativas
 
             })
+
+
+    # ========================================================
+    # RECONSTRUIR TEXTO DOS TOKENS
+    # ========================================================
+
+    texto_tokens = "".join(
+
+        token["token"]
+
+        for token in tokens_completos
+    )
+
+
+    # ========================================================
+    # LOCALIZAR A RESPOSTA PÚBLICA
+    # ========================================================
+
+    posicao = texto_tokens.find(
+        texto_resposta
+    )
+
+
+    # ========================================================
+    # ALINHAMENTO DOS TOKENS
+    # ========================================================
+
+    tokens_resposta = []
+
+
+    if posicao != -1:
+
+        inicio_resposta = posicao
+
+        fim_resposta = (
+            posicao +
+            len(texto_resposta)
+        )
+
+
+        posicao_atual = 0
+
+
+        for token in tokens_completos:
+
+            token_texto = token["token"]
+
+
+            inicio_token = (
+                posicao_atual
+            )
+
+
+            fim_token = (
+                posicao_atual +
+                len(token_texto)
+            )
+
+
+            posicao_atual = fim_token
+
+
+            # ----------------------------------------------
+            # Token ainda antes da resposta
+            # ----------------------------------------------
+
+            if fim_token <= inicio_resposta:
+
+                continue
+
+
+            # ----------------------------------------------
+            # Token pertence à resposta
+            # ----------------------------------------------
+
+            tokens_resposta.append(
+                token
+            )
+
+
+            # ----------------------------------------------
+            # Chegamos ao final
+            # ----------------------------------------------
+
+            if fim_token >= fim_resposta:
+
+                break
+
+
+    else:
+
+        print(
+            "\nAVISO: não foi possível "
+            "alinhar os tokens à resposta."
+        )
+
+
+    # ========================================================
+    # VERIFICAÇÃO DO ALINHAMENTO
+    # ========================================================
+
+    texto_reconstruido = "".join(
+
+        token["token"]
+
+        for token in tokens_resposta
+    )
+
+
+    alinhamento_correto = (
+        texto_reconstruido ==
+        texto_resposta
+    )
 
 
     # ========================================================
@@ -339,28 +489,54 @@ PERGUNTA
     print("\nDOCUMENTO:")
 
     if nome_arquivo:
+
         print(nome_arquivo)
+
     else:
+
         print("Nenhum documento")
+
+
+    print("\nMODELO:")
+    print(MODEL)
 
 
     print("\nRESPOSTA:")
     print(texto_resposta)
 
 
-    print("\nQUANTIDADE DE TOKENS:")
-    print(len(tokens))
+    print("\nTOKENS COMPLETOS:")
+    print(
+        len(tokens_completos)
+    )
 
 
-    if tokens:
+    print("\nTOKENS DA RESPOSTA:")
+    print(
+        len(tokens_resposta)
+    )
 
-        print("\nPRIMEIROS TOKENS:")
 
-        for token in tokens[:10]:
+    print("\nALINHAMENTO:")
+    print(
+        alinhamento_correto
+    )
+
+
+    if tokens_resposta:
+
+        print("\nPRIMEIROS TOKENS DA RESPOSTA:")
+
+        for token in tokens_resposta[:10]:
 
             print(
-                repr(token["token"]),
-                token["logprob"]
+                repr(
+                    token["token"]
+                ),
+                "| logprob:",
+                token["logprob"],
+                "| probabilidade:",
+                token["probabilidade"]
             )
 
 
@@ -392,7 +568,13 @@ PERGUNTA
             texto_resposta,
 
         "tokens":
-            tokens
+            tokens_resposta,
+
+        "quantidade_tokens":
+            len(tokens_resposta),
+
+        "alinhamento_correto":
+            alinhamento_correto
 
     })
 
