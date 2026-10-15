@@ -36,12 +36,10 @@
 
 
         .container {
-
-            max-width: 1000px;
-
+            max-width: 1500px;
+            width: 100%;
             margin: 0 auto;
-
-            padding: 40px 24px 80px;
+            padding: 30px 24px 80px;
         }
 
 
@@ -514,6 +512,63 @@
             color: #ddd;
         }
 
+        .painel-grafico {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 28px;
+        }
+
+        .painel-grafico h3 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .descricao-grafico {
+            color: #777;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .controles-grafico {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 18px 0;
+            font-size: 14px;
+        }
+
+        .controles-grafico select {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 7px;
+            background: white;
+            font: inherit;
+        }
+
+        #graficoTokens {
+            width: 100%;
+            min-height: 320px;
+        }
+
+        #detalheToken {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #f7f7f5;
+            color: #444;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 700px) {
+            #graficoTokens {
+                min-height: 260px;
+            }
+        }
+
 
         /* ====================================================
            RESPONSIVO
@@ -557,7 +612,59 @@
 
         }
 
+        /* Contêiner que coloca os painéis lado a lado */
+        .painel-resultados {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 20px;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        /* Cada painel ocupa uma coluna */
+        .painel-resultados > .painel-resposta,
+        .painel-resultados > .painel-grafico {
+            min-width: 0;
+            width: 100%;
+            margin: 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 24px;
+        }
+
+        /* O gráfico se adapta à largura disponível */
+        #graficoTokens {
+            width: 100%;
+            min-width: 0;
+            min-height: 320px;
+        }
+
+        /* Em telas estreitas, empilha os painéis */
+        @media (max-width: 800px) {
+            .painel-resultados {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 25px 15px 60px;
+            }
+
+            .painel-resultados > .painel-resposta,
+            .painel-resultados > .painel-grafico {
+                padding: 20px;
+            }
+
+            #graficoTokens {
+                min-height: 260px;
+            }
+        }
+
     </style>
+
+    <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script>
 
 </head>
 
@@ -688,55 +795,75 @@
          RESPOSTA
          ==================================================== -->
 
-    <div class="painel-resposta">
+    <div class="painel-resultados">
 
+        <!-- PAINEL DA RESPOSTA -->
+        <div class="painel-resposta">
 
-        <div class="resposta-cabecalho">
+            <div class="resposta-cabecalho">
+                <h2>Resposta</h2>
 
-            <h2>
-                Resposta
-            </h2>
+                <button
+                    id="copiarResposta"
+                    class="botao-acao"
+                    type="button"
+                >
+                    Copiar resposta
+                </button>
 
-            <button id="copiarResposta" class="botao-acao" type="button">
-                Copiar resposta
-            </button>
+                <button
+                    id="baixarDados"
+                    class="botao-acao"
+                    type="button"
+                    disabled
+                >
+                    Baixar dados (.json)
+                </button>
 
-            <button id="baixarDados" class="botao-acao" type="button" disabled>
-                Baixar dados (.json)
-            </button>
+                <div id="contador">
+                    Nenhum token analisado
+                </div>
+            </div>
 
+            <div id="resposta">
+                A resposta aparecerá aqui.
+            </div>
 
-            <div id="contador">
-                Nenhum token analisado
+            <div class="legenda">
+                <span>maior probabilidade linguística/gerativa</span>
+                <div class="escala"></div>
+                <span>menor probabilidade linguística/gerativa</span>
             </div>
 
         </div>
 
+        <!-- PAINEL DO GRÁFICO -->
+        <div class="painel-grafico">
 
-        <div id="resposta">
+            <h3>Probabilidade dos tokens</h3>
 
-            A resposta aparecerá aqui.
+            <p class="descricao-grafico">
+                Selecione um ponto para consultar o token e suas probabilidades.
+            </p>
 
-        </div>
+            <div class="controles-grafico">
+                <label for="metricaGrafico">Métrica:</label>
 
+                <select id="metricaGrafico">
+                    <option value="probabilidade">Probabilidade (%)</option>
+                    <option value="logprob">Logprob</option>
+                </select>
+            </div>
 
-        <!-- =================================================
-             LEGENDA
-             ================================================= -->
+            <div
+                id="graficoTokens"
+                role="img"
+                aria-label="Gráfico interativo de probabilidades dos tokens"
+            ></div>
 
-        <div class="legenda">
-
-            <span>
-                maior probabilidade linguística/gerativa
-            </span>
-
-
-            <div class="escala"></div>
-
-
-            <span>
-                menor probabilidade linguística/gerativa
-            </span>
+            <div id="detalheToken" aria-live="polite">
+                Clique em um ponto do gráfico para ver os detalhes.
+            </div>
 
         </div>
 
@@ -896,6 +1023,153 @@ copiarResposta.addEventListener("click", async function () {
 const botaoBaixarDados = document.getElementById("baixarDados");
 
 let dadosUltimaResposta = null;
+
+// ============================================================
+// GRÁFICO INTERATIVO DOS TOKENS
+// ============================================================
+
+const metricaGrafico = document.getElementById("metricaGrafico");
+const graficoTokens = document.getElementById("graficoTokens");
+const detalheToken = document.getElementById("detalheToken");
+
+function desenharGraficoTokens(dados) {
+    if (typeof Plotly === "undefined") {
+        detalheToken.textContent =
+            "Não foi possível carregar a biblioteca do gráfico.";
+        return;
+    }
+
+    if (!dados.tokens || dados.tokens.length === 0) {
+        graficoTokens.innerHTML = "";
+        detalheToken.textContent =
+            "Não há tokens disponíveis para visualizar.";
+        return;
+    }
+
+    const tokens = dados.tokens;
+    const metrica = metricaGrafico.value;
+
+    const valores = tokens.map(token => {
+        if (metrica === "logprob") {
+            return token.logprob;
+        }
+
+        return token.probabilidade == null
+            ? null
+            : token.probabilidade * 100;
+    });
+
+    const pontos = tokens.map((token, indice) => ({
+        indice: indice,
+        token: token.token,
+        logprob: token.logprob,
+        probabilidade: token.probabilidade,
+        alternativas: token.alternativas || []
+    }));
+
+    const trace = {
+        x: tokens.map((_, indice) => indice + 1),
+        y: valores,
+        type: "scatter",
+        mode: "lines+markers",
+        customdata: pontos,
+        line: {
+            color: "#64748b",
+            width: 2
+        },
+        marker: {
+            color: valores.map(valor => {
+                if (valor == null) return "#cbd5e1";
+                if (metrica === "logprob") {
+                    return valor > -0.5 ? "#65a30d"
+                        : valor > -1.5 ? "#d97706"
+                        : "#dc2626";
+                }
+                return valor >= 70 ? "#65a30d"
+                    : valor >= 25 ? "#d97706"
+                    : "#dc2626";
+            }),
+            size: 7
+        },
+        hovertemplate:
+            "<b>Token %{customdata.token}</b><br>" +
+            "Posição: %{x}<br>" +
+            "Probabilidade: %{customdata.probabilidade:.4%}<br>" +
+            "Logprob: %{customdata.logprob:.6f}" +
+            "<extra></extra>"
+    };
+
+    const layout = {
+        autosize: true,
+        margin: { l: 60, r: 20, t: 20, b: 60 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        xaxis: {
+            title: "Posição do token na resposta",
+            dtick: Math.max(1, Math.ceil(tokens.length / 15)),
+            gridcolor: "#eeeeee"
+        },
+        yaxis: {
+            title: metrica === "probabilidade"
+                ? "Probabilidade (%)"
+                : "Logprob",
+            gridcolor: "#eeeeee",
+            zeroline: true
+        },
+        font: {
+            family: "Arial, Helvetica, sans-serif",
+            color: "#444"
+        }
+    };
+
+    Plotly.react(
+        graficoTokens,
+        [trace],
+        layout,
+        {
+            responsive: true,
+            displaylogo: false
+        }
+    );
+
+    graficoTokens.on("plotly_click", function(evento) {
+        const ponto = evento.points[0].customdata;
+
+        const alternativas = ponto.alternativas.length
+            ? ponto.alternativas.map(alt =>
+                `${alt.token}: ${
+                    alt.probabilidade == null
+                        ? "probabilidade indisponível"
+                        : (alt.probabilidade * 100).toFixed(4) + "%"
+                }`
+            ).join("\n")
+            : "Nenhuma alternativa disponível.";
+
+        detalheToken.textContent =
+            `Token: ${JSON.stringify(ponto.token)}\n` +
+            `Posição: ${ponto.indice + 1}\n` +
+            `Probabilidade: ${
+                ponto.probabilidade == null
+                    ? "indisponível"
+                    : (ponto.probabilidade * 100).toFixed(6) + "%"
+            }\n` +
+            `Logprob: ${
+                ponto.logprob == null
+                    ? "indisponível"
+                    : ponto.logprob
+            }\n` +
+            `Alternativas:\n${alternativas}`;
+
+        detalheToken.style.whiteSpace = "pre-wrap";
+    });
+}
+
+// Atualiza o gráfico quando a métrica for alterada.
+metricaGrafico.addEventListener("change", function() {
+    if (dadosUltimaResposta) {
+        desenharGraficoTokens(dadosUltimaResposta);
+    }
+});
 
 function baixarDadosResposta() {
     if (!dadosUltimaResposta) {
@@ -1539,12 +1813,16 @@ async function fazerPergunta() {
         // TRANSFORMAR EM JSON
         // ----------------------------------------------------
 
-        const dados =
-            await resposta.json();
+        const dados = await resposta.json();
 
-            dadosUltimaResposta = dados;
-            botaoBaixarDados.disabled = false;
+        if (!resposta.ok) {
+            throw new Error(
+                dados.erro || "Erro ao consultar a API."
+            );
+        }
 
+        dadosUltimaResposta = dados;
+        botaoBaixarDados.disabled = false;
         // ----------------------------------------------------
         // ERRO
         // ----------------------------------------------------
@@ -1562,9 +1840,8 @@ async function fazerPergunta() {
         // MOSTRAR RESPOSTA
         // ----------------------------------------------------
 
-        criarResposta(
-            dados
-        );
+        criarResposta(dados);
+        desenharGraficoTokens(dados);
 
 
         // ----------------------------------------------------
