@@ -180,6 +180,46 @@
             font-size: 13px;
         }
 
+        
+        /* Fonte selecionada */
+
+        .fonte-selecionada {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 7px;
+            background: #fafafa;
+            font-size: 13px;
+        }
+
+        .fonte-nome {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            color: #444;
+        }
+
+        .botao-remover-fonte {
+            flex-shrink: 0;
+            padding: 4px 9px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            color: #555;
+            font-size: 18px;
+            line-height: 1.2;
+            cursor: pointer;
+        }
+
+        .botao-remover-fonte:hover {
+            background: #eee;
+            color: #b42318;
+        }
+
+
 
         .acoes {
 
@@ -300,6 +340,37 @@
             white-space: pre-wrap;
 
             word-wrap: break-word;
+        }
+
+        
+        .cabecalho-resposta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .botao-acao {
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: #1f2937;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .botao-acao:hover:not(:disabled) {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .botao-acao:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
 
@@ -519,9 +590,10 @@
 
         <div class="modelo">
 
-            Qwen3-32B · Hugging Face / Nscale
+            Qwen 3.8 27B · Cloudflare Workers AI
 
         </div>
+        
 
     </div>
 
@@ -562,6 +634,26 @@
                 id="arquivo"
                 accept=".txt,.md,.csv"
             >
+
+            
+            <div
+                id="fonteSelecionada"
+                class="fonte-selecionada"
+            >
+                <span
+                    id="nomeFonte"
+                    class="fonte-nome"
+                ></span>
+
+                <button
+                    type="button"
+                    id="removerFonte"
+                    class="botao-remover-fonte"
+                    title="Remover fonte"
+                    aria-label="Remover fonte selecionada"
+                >×</button>
+            </div>
+
 
 
             <div class="observacao">
@@ -604,6 +696,14 @@
             <h2>
                 Resposta
             </h2>
+
+            <button id="copiarResposta" class="botao-acao" type="button">
+                Copiar resposta
+            </button>
+
+            <button id="baixarDados" class="botao-acao" type="button" disabled>
+                Baixar dados (.json)
+            </button>
 
 
             <div id="contador">
@@ -670,6 +770,50 @@ const arquivoInput =
     document.getElementById(
         "arquivo"
     );
+    
+const fonteSelecionada =
+    document.getElementById("fonteSelecionada");
+
+const nomeFonte =
+    document.getElementById("nomeFonte");
+
+const removerFonte =
+    document.getElementById("removerFonte");
+
+
+function atualizarFonteSelecionada() {
+    const arquivo = arquivoInput.files[0];
+
+    if (arquivo) {
+        nomeFonte.textContent = "📄 " + arquivo.name;
+        fonteSelecionada.style.display = "flex";
+    } else {
+        nomeFonte.textContent = "";
+        fonteSelecionada.style.display = "none";
+    }
+}
+
+
+// Atualiza a interface quando um arquivo é selecionado.
+arquivoInput.addEventListener(
+    "change",
+    () => {
+        statusElemento.textContent = "";
+        atualizarFonteSelecionada();
+    }
+);
+
+
+// Remove o arquivo efetivamente da seleção.
+removerFonte.addEventListener(
+    "click",
+    function() {
+        arquivoInput.value = "";
+        atualizarFonteSelecionada();
+        statusElemento.textContent = "Fonte removida.";
+    }
+);
+
 
 
 const botaoPerguntar =
@@ -688,6 +832,99 @@ const respostaElemento =
     document.getElementById(
         "resposta"
     );
+
+const copiarResposta = document.getElementById("copiarResposta");
+let temporizadorCopia = null;
+
+
+function obterTextoResposta() {
+    // Copia o texto da resposta, sem os elementos dos tooltips.
+    return respostaElemento.innerText.trim();
+}
+
+function mostrarMensagemCopia(mensagem) {
+    statusElemento.textContent = mensagem;
+}
+
+copiarResposta.addEventListener("click", async function () {
+    const texto = obterTextoResposta();
+
+    if (!texto || texto === "A resposta aparecerá aqui.") {
+        mostrarMensagemCopia("Não há resposta para copiar.");
+        return;
+    }
+
+    try {
+        // Método principal: funciona em localhost e HTTPS.
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(texto);
+        } else {
+            // Alternativa para navegadores sem Clipboard API.
+            const campoTemporario = document.createElement("textarea");
+            campoTemporario.value = texto;
+            campoTemporario.setAttribute("readonly", "");
+            campoTemporario.style.position = "fixed";
+            campoTemporario.style.opacity = "0";
+            document.body.appendChild(campoTemporario);
+            campoTemporario.select();
+
+            const copiou = document.execCommand("copy");
+            campoTemporario.remove();
+
+            if (!copiou) {
+                throw new Error("A cópia não foi autorizada pelo navegador.");
+            }
+        }
+
+        copiarResposta.textContent = "Copiado!";
+        mostrarMensagemCopia("Texto copiado!");
+
+        clearTimeout(temporizadorCopia);
+        temporizadorCopia = setTimeout(() => {
+            copiarResposta.textContent = "Copiar resposta";
+            statusElemento.textContent = "";
+        }, 2500);
+
+    } catch (erro) {
+        console.error("Erro ao copiar a resposta:", erro);
+        mostrarMensagemCopia(
+            "Não foi possível copiar. Verifique as permissões do navegador."
+        );
+    }
+});
+
+const botaoBaixarDados = document.getElementById("baixarDados");
+
+let dadosUltimaResposta = null;
+
+function baixarDadosResposta() {
+    if (!dadosUltimaResposta) {
+        return;
+    }
+
+    const conteudo = JSON.stringify(dadosUltimaResposta, null, 2);
+    const arquivo = new Blob(
+        [conteudo],
+        { type: "application/json;charset=utf-8" }
+    );
+
+    const url = URL.createObjectURL(arquivo);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "historia-dados-logprobs.json";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+}
+
+botaoBaixarDados.addEventListener(
+    "click",
+    baixarDadosResposta
+);
 
 
 const contadorElemento =
@@ -1305,6 +1542,8 @@ async function fazerPergunta() {
         const dados =
             await resposta.json();
 
+            dadosUltimaResposta = dados;
+            botaoBaixarDados.disabled = false;
 
         // ----------------------------------------------------
         // ERRO

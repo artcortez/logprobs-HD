@@ -830,7 +830,7 @@ body {
             <span class="model-dot"></span>
 
             <span id="model-name">
-                Qwen3-4B-Instruct-2507 · Hugging Face / Nscale
+                Qwen3-32B · Hugging Face / Nscale
             </span>
 
         </div>
@@ -949,6 +949,7 @@ const erro =
 
 const tooltip =
     document.getElementById("token-tooltip");
+
 
 
 let tokenAtivo = null;
