@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import socket
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -197,8 +198,11 @@ def consultar_cloudflare(system_prompt, prompt):
             "Não foi possível conectar ao Cloudflare Workers AI."
         )
 
-    except TimeoutError:
-        raise RuntimeError("A consulta excedeu o tempo limite.")
+    except (TimeoutError, socket.timeout):
+        raise RuntimeError(
+            "A Cloudflare demorou demais para responder. "
+            "Tente novamente com uma pergunta mais curta."
+        )
 
     if resultado.get("error"):
         detalhe = resultado["error"]
