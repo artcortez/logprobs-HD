@@ -1,0 +1,1921 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>História e Logprobs</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            background: #f5f5f3;
+
+            color: #222;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+        }
+
+
+        .container {
+            max-width: 1500px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 30px 24px 80px;
+        }
+
+
+        /* ====================================================
+           CABEÇALHO
+           ==================================================== */
+
+        .cabecalho {
+
+            margin-bottom: 35px;
+        }
+
+
+        .cabecalho h1 {
+
+            margin: 0 0 8px;
+
+            font-size: 30px;
+
+            font-weight: 600;
+        }
+
+
+        .subtitulo {
+
+            margin: 0;
+
+            color: #666;
+
+            font-size: 15px;
+
+            line-height: 1.5;
+        }
+
+
+        /* ====================================================
+           MODELO
+           ==================================================== */
+
+        .modelo {
+
+            margin-top: 12px;
+
+            color: #888;
+
+            font-size: 13px;
+        }
+
+
+        /* ====================================================
+           ÁREA DA PERGUNTA
+           ==================================================== */
+
+        .painel-pergunta {
+
+            background: white;
+
+            border: 1px solid #ddd;
+
+            border-radius: 10px;
+
+            padding: 22px;
+
+            margin-bottom: 30px;
+        }
+
+
+        .campo-label {
+
+            display: block;
+
+            margin-bottom: 8px;
+
+            font-size: 14px;
+
+            font-weight: 600;
+        }
+
+
+        textarea {
+
+            width: 100%;
+
+            min-height: 100px;
+
+            resize: vertical;
+
+            padding: 12px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 7px;
+
+            font-family: inherit;
+
+            font-size: 16px;
+
+            line-height: 1.5;
+
+            outline: none;
+        }
+
+
+        textarea:focus {
+
+            border-color: #999;
+        }
+
+
+        .linha-arquivo {
+
+            margin-top: 18px;
+        }
+
+
+        input[type="file"] {
+
+            width: 100%;
+
+            padding: 10px;
+
+            border: 1px solid #ddd;
+
+            border-radius: 7px;
+
+            background: #fafafa;
+        }
+
+
+        .observacao {
+
+            margin-top: 7px;
+
+            color: #777;
+
+            font-size: 13px;
+        }
+
+        
+        /* Fonte selecionada */
+
+        .fonte-selecionada {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 7px;
+            background: #fafafa;
+            font-size: 13px;
+        }
+
+        .fonte-nome {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            color: #444;
+        }
+
+        .botao-remover-fonte {
+            flex-shrink: 0;
+            padding: 4px 9px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            color: #555;
+            font-size: 18px;
+            line-height: 1.2;
+            cursor: pointer;
+        }
+
+        .botao-remover-fonte:hover {
+            background: #eee;
+            color: #b42318;
+        }
+
+
+
+        .acoes {
+
+            margin-top: 18px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            flex-wrap: wrap;
+        }
+
+
+        button {
+
+            border: none;
+
+            border-radius: 7px;
+
+            padding: 11px 20px;
+
+            background: #222;
+
+            color: white;
+
+            font-size: 15px;
+
+            cursor: pointer;
+        }
+
+
+        button:hover {
+
+            background: #444;
+        }
+
+
+        button:disabled {
+
+            background: #aaa;
+
+            cursor: wait;
+        }
+
+
+        /* ====================================================
+           STATUS
+           ==================================================== */
+
+        #status {
+
+            color: #777;
+
+            font-size: 13px;
+        }
+
+
+        /* ====================================================
+           RESPOSTA
+           ==================================================== */
+
+        .painel-resposta {
+
+            background: white;
+
+            border: 1px solid #ddd;
+
+            border-radius: 10px;
+
+            padding: 28px;
+
+            min-height: 150px;
+        }
+
+
+        .resposta-cabecalho {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 20px;
+
+            margin-bottom: 22px;
+
+            flex-wrap: wrap;
+        }
+
+
+        .resposta-cabecalho h2 {
+
+            margin: 0;
+
+            font-size: 18px;
+
+            font-weight: 600;
+        }
+
+
+        #contador {
+
+            color: #888;
+
+            font-size: 12px;
+        }
+
+
+        #resposta {
+
+            font-size: 18px;
+
+            line-height: 1.85;
+
+            white-space: pre-wrap;
+
+            word-wrap: break-word;
+        }
+
+        
+        .cabecalho-resposta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .botao-acao {
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: #1f2937;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .botao-acao:hover:not(:disabled) {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .botao-acao:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+
+        /* ====================================================
+           TOKENS
+           ==================================================== */
+
+        .token {
+
+            display: inline-block;
+
+            cursor: pointer;
+
+            border-radius: 3px;
+
+            padding: 0 1px;
+
+            transition:
+                background 0.12s ease,
+                outline 0.12s ease;
+        }
+
+
+        .token:hover {
+
+            outline:
+                1px solid
+                rgba(0, 0, 0, 0.22);
+        }
+
+
+        /* ====================================================
+           LEGENDA
+           ==================================================== */
+
+        .legenda {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            margin-top: 24px;
+
+            padding-top: 18px;
+
+            border-top: 1px solid #eee;
+
+            color: #777;
+
+            font-size: 12px;
+        }
+
+
+        .escala {
+
+            width: 180px;
+
+            height: 12px;
+
+            border-radius: 3px;
+
+            background:
+                linear-gradient(
+                    to right,
+                    rgba(255, 236, 179, 0.35),
+                    rgba(255, 224, 130, 0.55),
+                    rgba(255, 183, 77, 0.65),
+                    rgba(255, 138, 52, 0.75),
+                    rgba(239, 83, 40, 0.85),
+                    rgba(198, 40, 40, 0.9)
+                );
+        }
+
+
+        /* ====================================================
+           TOOLTIP
+           ==================================================== */
+
+        #tooltip {
+
+            position: fixed;
+
+            z-index: 9999;
+
+            width: 300px;
+
+            background: #1f1f1f;
+
+            color: white;
+
+            padding: 10px 12px;
+
+            border-radius: 8px;
+
+            font-size: 13px;
+
+            line-height: 1.4;
+
+            box-shadow:
+                0 4px 18px
+                rgba(0, 0, 0, 0.25);
+
+            pointer-events: none;
+
+            display: none;
+        }
+
+
+        #tooltip .titulo {
+
+            font-weight: bold;
+
+            margin-bottom: 6px;
+        }
+
+
+        #tooltip .linha {
+
+            margin-bottom: 3px;
+        }
+
+
+        #tooltip .alternativas {
+
+            margin-top: 8px;
+
+            border-top:
+                1px solid
+                rgba(255, 255, 255, 0.2);
+
+            padding-top: 7px;
+        }
+
+
+        #tooltip .alternativa {
+
+            margin-top: 3px;
+
+            color: #ddd;
+        }
+
+        .painel-grafico {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 28px;
+        }
+
+        .painel-grafico h3 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .descricao-grafico {
+            color: #777;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .controles-grafico {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 18px 0;
+            font-size: 14px;
+        }
+
+        .controles-grafico select {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 7px;
+            background: white;
+            font: inherit;
+        }
+
+        #graficoTokens {
+            width: 100%;
+            min-height: 320px;
+        }
+
+        #detalheToken {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #f7f7f5;
+            color: #444;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 700px) {
+            #graficoTokens {
+                min-height: 260px;
+            }
+        }
+
+
+        /* ====================================================
+           RESPONSIVO
+           ==================================================== */
+
+        @media (max-width: 700px) {
+
+            .container {
+
+                padding:
+                    25px
+                    15px
+                    60px;
+            }
+
+
+            .cabecalho h1 {
+
+                font-size: 24px;
+            }
+
+
+            .painel-resposta {
+
+                padding: 20px;
+            }
+
+
+            #resposta {
+
+                font-size: 16px;
+
+                line-height: 1.8;
+            }
+
+
+            .escala {
+
+                width: 120px;
+            }
+
+        }
+
+        /* Contêiner que coloca os painéis lado a lado */
+        .painel-resultados {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 20px;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        /* Cada painel ocupa uma coluna */
+        .painel-resultados > .painel-resposta,
+        .painel-resultados > .painel-grafico {
+            min-width: 0;
+            width: 100%;
+            margin: 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 24px;
+        }
+
+        /* O gráfico se adapta à largura disponível */
+        #graficoTokens {
+            width: 100%;
+            min-width: 0;
+            min-height: 320px;
+        }
+
+        /* Em telas estreitas, empilha os painéis */
+        @media (max-width: 800px) {
+            .painel-resultados {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 25px 15px 60px;
+            }
+
+            .painel-resultados > .painel-resposta,
+            .painel-resultados > .painel-grafico {
+                padding: 20px;
+            }
+
+            #graficoTokens {
+                min-height: 260px;
+            }
+        }
+
+        
+
+    </style>
+
+    <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <!-- ====================================================
+         CABEÇALHO
+         ==================================================== -->
+
+    <div class="cabecalho">
+
+        <h1>
+            HistórIA
+        </h1>
+
+
+        <p class="subtitulo">
+
+            Você pode conversar livremente com a IA ou,
+            se preferir, selecionar uma fonte histórica
+            para orientar a resposta.
+
+        </p>
+
+
+        <div class="modelo">
+
+            Qwen 3.8 27B · Cloudflare Workers AI
+
+        </div>
+        
+
+    </div>
+
+
+    <!-- ====================================================
+         PERGUNTA
+         ==================================================== -->
+
+    <div class="painel-pergunta">
+
+
+        <label
+            class="campo-label"
+            for="pergunta"
+        >
+            Pergunta
+        </label>
+
+
+        <textarea
+            id="pergunta"
+            placeholder="Digite sua pergunta..."
+        ></textarea>
+
+
+        <div class="linha-arquivo">
+
+            <label
+                class="campo-label"
+                for="arquivo"
+            >
+                Fonte histórica
+            </label>
+
+
+            <input
+                type="file"
+                id="arquivo"
+                accept=".txt,.md,.csv"
+            >
+
+            
+            <div
+                id="fonteSelecionada"
+                class="fonte-selecionada"
+            >
+                <span
+                    id="nomeFonte"
+                    class="fonte-nome"
+                ></span>
+
+                <button
+                    type="button"
+                    id="removerFonte"
+                    class="botao-remover-fonte"
+                    title="Remover fonte"
+                    aria-label="Remover fonte selecionada"
+                >×</button>
+            </div>
+
+
+
+            <div class="observacao">
+
+                Opcional. Se você selecionar um documento,
+                a IA tentará responder utilizando apenas
+                as informações presentes nele.
+
+            </div>
+
+        </div>
+
+
+        <div class="acoes">
+
+            <button
+                id="botaoPerguntar"
+                type="button"
+            >
+                Perguntar
+            </button>
+
+
+            <span id="status"></span>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================
+         RESPOSTA
+         ==================================================== -->
+
+    <div class="painel-resultados">
+
+        <!-- PAINEL DA RESPOSTA -->
+        <div class="painel-resposta">
+
+            <div class="resposta-cabecalho">
+                <h2>Resposta</h2>
+
+                <button
+                    id="copiarResposta"
+                    class="botao-acao"
+                    type="button"
+                >
+                    Copiar resposta
+                </button>
+
+                <button
+                    id="baixarDados"
+                    class="botao-acao"
+                    type="button"
+                    disabled
+                >
+                    Baixar dados (.json)
+                </button>
+
+                <div id="contador">
+                    Nenhum token analisado
+                </div>
+            </div>
+
+            <div id="resposta">
+                A resposta aparecerá aqui.
+            </div>
+
+            <div class="legenda">
+                <span>maior probabilidade linguística/gerativa</span>
+                <div class="escala"></div>
+                <span>menor probabilidade linguística/gerativa</span>
+            </div>
+
+        </div>
+
+        <!-- PAINEL DO GRÁFICO -->
+        <div class="painel-grafico">
+
+            <h3>Probabilidade dos tokens</h3>
+
+            <p class="descricao-grafico">
+                Selecione um ponto para consultar o token e suas probabilidades.
+            </p>
+
+            <div class="controles-grafico">
+                <label for="metricaGrafico">Métrica:</label>
+
+                <select id="metricaGrafico">
+                    <option value="probabilidade">Probabilidade (%)</option>
+                    <option value="logprob">Logprob</option>
+                </select>
+            </div>
+
+            <div
+                id="graficoTokens"
+                role="img"
+                aria-label="Gráfico interativo de probabilidades dos tokens"
+            ></div>
+
+            <div id="detalheToken" aria-live="polite">
+                Clique em um ponto do gráfico para ver os detalhes.
+            </div>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<!-- ========================================================
+     TOOLTIP
+     ======================================================== -->
+
+<div id="tooltip"></div>
+
+
+<script>
+
+
+// ============================================================
+// ELEMENTOS
+// ============================================================
+
+const perguntaInput =
+    document.getElementById(
+        "pergunta"
+    );
+
+
+const arquivoInput =
+    document.getElementById(
+        "arquivo"
+    );
+    
+const fonteSelecionada =
+    document.getElementById("fonteSelecionada");
+
+const nomeFonte =
+    document.getElementById("nomeFonte");
+
+const removerFonte =
+    document.getElementById("removerFonte");
+
+
+function atualizarFonteSelecionada() {
+    const arquivo = arquivoInput.files[0];
+
+    if (arquivo) {
+        nomeFonte.textContent = "📄 " + arquivo.name;
+        fonteSelecionada.style.display = "flex";
+    } else {
+        nomeFonte.textContent = "";
+        fonteSelecionada.style.display = "none";
+    }
+}
+
+
+// Atualiza a interface quando um arquivo é selecionado.
+arquivoInput.addEventListener(
+    "change",
+    () => {
+        statusElemento.textContent = "";
+        atualizarFonteSelecionada();
+    }
+);
+
+
+// Remove o arquivo efetivamente da seleção.
+removerFonte.addEventListener(
+    "click",
+    function() {
+        arquivoInput.value = "";
+        atualizarFonteSelecionada();
+        statusElemento.textContent = "Fonte removida.";
+    }
+);
+
+
+
+const botaoPerguntar =
+    document.getElementById(
+        "botaoPerguntar"
+    );
+
+
+const statusElemento =
+    document.getElementById(
+        "status"
+    );
+
+
+const respostaElemento =
+    document.getElementById(
+        "resposta"
+    );
+
+const copiarResposta = document.getElementById("copiarResposta");
+let temporizadorCopia = null;
+
+
+function obterTextoResposta() {
+    // Copia o texto da resposta, sem os elementos dos tooltips.
+    return respostaElemento.innerText.trim();
+}
+
+function mostrarMensagemCopia(mensagem) {
+    statusElemento.textContent = mensagem;
+}
+
+copiarResposta.addEventListener("click", async function () {
+    const texto = obterTextoResposta();
+
+    if (!texto || texto === "A resposta aparecerá aqui.") {
+        mostrarMensagemCopia("Não há resposta para copiar.");
+        return;
+    }
+
+    try {
+        // Método principal: funciona em localhost e HTTPS.
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(texto);
+        } else {
+            // Alternativa para navegadores sem Clipboard API.
+            const campoTemporario = document.createElement("textarea");
+            campoTemporario.value = texto;
+            campoTemporario.setAttribute("readonly", "");
+            campoTemporario.style.position = "fixed";
+            campoTemporario.style.opacity = "0";
+            document.body.appendChild(campoTemporario);
+            campoTemporario.select();
+
+            const copiou = document.execCommand("copy");
+            campoTemporario.remove();
+
+            if (!copiou) {
+                throw new Error("A cópia não foi autorizada pelo navegador.");
+            }
+        }
+
+        copiarResposta.textContent = "Copiado!";
+        mostrarMensagemCopia("Texto copiado!");
+
+        clearTimeout(temporizadorCopia);
+        temporizadorCopia = setTimeout(() => {
+            copiarResposta.textContent = "Copiar resposta";
+            statusElemento.textContent = "";
+        }, 2500);
+
+    } catch (erro) {
+        console.error("Erro ao copiar a resposta:", erro);
+        mostrarMensagemCopia(
+            "Não foi possível copiar. Verifique as permissões do navegador."
+        );
+    }
+});
+
+const botaoBaixarDados = document.getElementById("baixarDados");
+
+let dadosUltimaResposta = null;
+
+// ============================================================
+// GRÁFICO INTERATIVO DOS TOKENS
+// ============================================================
+
+const metricaGrafico = document.getElementById("metricaGrafico");
+const graficoTokens = document.getElementById("graficoTokens");
+const detalheToken = document.getElementById("detalheToken");
+
+function desenharGraficoTokens(dados) {
+    if (typeof Plotly === "undefined") {
+        detalheToken.textContent =
+            "Não foi possível carregar a biblioteca do gráfico.";
+        return;
+    }
+
+    if (!dados.tokens || dados.tokens.length === 0) {
+        graficoTokens.innerHTML = "";
+        detalheToken.textContent =
+            "Não há tokens disponíveis para visualizar.";
+        return;
+    }
+
+    const tokens = dados.tokens;
+    const metrica = metricaGrafico.value;
+
+    const valores = tokens.map(token => {
+        if (metrica === "logprob") {
+            return token.logprob;
+        }
+
+        return token.probabilidade == null
+            ? null
+            : token.probabilidade * 100;
+    });
+
+    const pontos = tokens.map((token, indice) => ({
+        indice: indice,
+        token: token.token,
+        logprob: token.logprob,
+        probabilidade: token.probabilidade,
+        alternativas: token.alternativas || []
+    }));
+
+    const trace = {
+        x: tokens.map((_, indice) => indice + 1),
+        y: valores,
+        type: "scatter",
+        mode: "lines+markers",
+        customdata: pontos,
+        line: {
+            color: "#64748b",
+            width: 2
+        },
+        marker: {
+            color: valores.map(valor => {
+                if (valor == null) return "#cbd5e1";
+                if (metrica === "logprob") {
+                    return valor > -0.5 ? "#65a30d"
+                        : valor > -1.5 ? "#d97706"
+                        : "#dc2626";
+                }
+                return valor >= 70 ? "#65a30d"
+                    : valor >= 25 ? "#d97706"
+                    : "#dc2626";
+            }),
+            size: 7
+        },
+        hovertemplate:
+            "<b>Token %{customdata.token}</b><br>" +
+            "Posição: %{x}<br>" +
+            "Probabilidade: %{customdata.probabilidade:.4%}<br>" +
+            "Logprob: %{customdata.logprob:.6f}" +
+            "<extra></extra>"
+    };
+
+    const layout = {
+        autosize: true,
+        margin: { l: 60, r: 20, t: 20, b: 60 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        xaxis: {
+            title: "Posição do token na resposta",
+            dtick: Math.max(1, Math.ceil(tokens.length / 15)),
+            gridcolor: "#eeeeee"
+        },
+        yaxis: {
+            title: metrica === "probabilidade"
+                ? "Probabilidade (%)"
+                : "Logprob",
+            gridcolor: "#eeeeee",
+            zeroline: true
+        },
+        font: {
+            family: "Arial, Helvetica, sans-serif",
+            color: "#444"
+        }
+    };
+
+    Plotly.react(
+        graficoTokens,
+        [trace],
+        layout,
+        {
+            responsive: true,
+            displaylogo: false
+        }
+    );
+
+    graficoTokens.on("plotly_click", function(evento) {
+        const ponto = evento.points[0].customdata;
+
+        const alternativas = ponto.alternativas.length
+            ? ponto.alternativas.map(alt =>
+                `${alt.token}: ${
+                    alt.probabilidade == null
+                        ? "probabilidade indisponível"
+                        : (alt.probabilidade * 100).toFixed(4) + "%"
+                }`
+            ).join("\n")
+            : "Nenhuma alternativa disponível.";
+
+        detalheToken.textContent =
+            `Token: ${JSON.stringify(ponto.token)}\n` +
+            `Posição: ${ponto.indice + 1}\n` +
+            `Probabilidade: ${
+                ponto.probabilidade == null
+                    ? "indisponível"
+                    : (ponto.probabilidade * 100).toFixed(6) + "%"
+            }\n` +
+            `Logprob: ${
+                ponto.logprob == null
+                    ? "indisponível"
+                    : ponto.logprob
+            }\n` +
+            `Alternativas:\n${alternativas}`;
+
+        detalheToken.style.whiteSpace = "pre-wrap";
+    });
+}
+
+// Atualiza o gráfico quando a métrica for alterada.
+metricaGrafico.addEventListener("change", function() {
+    if (dadosUltimaResposta) {
+        desenharGraficoTokens(dadosUltimaResposta);
+    }
+});
+
+function baixarDadosResposta() {
+    if (!dadosUltimaResposta) {
+        return;
+    }
+
+    const conteudo = JSON.stringify(dadosUltimaResposta, null, 2);
+    const arquivo = new Blob(
+        [conteudo],
+        { type: "application/json;charset=utf-8" }
+    );
+
+    const url = URL.createObjectURL(arquivo);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "historia-dados-logprobs.json";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+}
+
+botaoBaixarDados.addEventListener(
+    "click",
+    baixarDadosResposta
+);
+
+
+const contadorElemento =
+    document.getElementById(
+        "contador"
+    );
+
+
+const tooltip =
+    document.getElementById(
+        "tooltip"
+    );
+
+
+// ============================================================
+// FORMATAR PROBABILIDADE
+// ============================================================
+
+function formatarProbabilidade(
+    valor
+) {
+
+    if (
+        valor === null ||
+        valor === undefined
+    ) {
+
+        return "—";
+    }
+
+
+    if (valor >= 0.99999999) {
+
+        return "≈ 100%";
+    }
+
+
+    const porcentagem =
+        valor * 100;
+
+
+    if (porcentagem >= 1) {
+
+        return (
+            porcentagem.toFixed(2) +
+            "%"
+        );
+    }
+
+
+    if (porcentagem >= 0.01) {
+
+        return (
+            porcentagem.toFixed(4) +
+            "%"
+        );
+    }
+
+
+    if (porcentagem >= 0.000001) {
+
+        return (
+            porcentagem.toFixed(8) +
+            "%"
+        );
+    }
+
+
+    return (
+        porcentagem.toFixed(10) +
+        "%"
+    );
+}
+
+
+// ============================================================
+// FORMATAR LOGPROB
+// ============================================================
+
+function formatarLogprob(
+    valor
+) {
+
+    if (
+        valor === null ||
+        valor === undefined
+    ) {
+
+        return "—";
+    }
+
+
+    if (
+        Math.abs(valor) <
+        0.0000005
+    ) {
+
+        return "≈ 0";
+    }
+
+
+    return valor.toFixed(6);
+}
+
+
+// ============================================================
+// ESCAPAR HTML
+// ============================================================
+
+function escaparHTML(
+    texto
+) {
+
+    return String(texto)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+// ============================================================
+// COR DO TOKEN
+// ============================================================
+
+function corDoToken(
+    probabilidade
+) {
+
+    if (
+        probabilidade === null ||
+        probabilidade === undefined
+    ) {
+
+        return "";
+    }
+
+
+    /*
+     * A cor representa a probabilidade
+     * do token selecionado pelo modelo.
+     *
+     * Maior probabilidade:
+     * cor mais clara.
+     *
+     * Menor probabilidade:
+     * cor mais quente e intensa.
+     */
+
+
+    if (probabilidade >= 0.90) {
+
+        return (
+            "rgba(255, 236, 179, 0.18)"
+        );
+    }
+
+
+    if (probabilidade >= 0.70) {
+
+        return (
+            "rgba(255, 224, 130, 0.28)"
+        );
+    }
+
+
+    if (probabilidade >= 0.50) {
+
+        return (
+            "rgba(255, 183, 77, 0.38)"
+        );
+    }
+
+
+    if (probabilidade >= 0.25) {
+
+        return (
+            "rgba(255, 138, 52, 0.48)"
+        );
+    }
+
+
+    if (probabilidade >= 0.10) {
+
+        return (
+            "rgba(239, 83, 40, 0.58)"
+        );
+    }
+
+
+    return (
+        "rgba(198, 40, 40, 0.68)"
+    );
+}
+
+
+// ============================================================
+// MOSTRAR TOOLTIP
+// ============================================================
+
+function mostrarTooltip(
+    elemento,
+    dados
+) {
+
+    let html = "";
+
+
+    // --------------------------------------------------------
+    // TOKEN
+    // --------------------------------------------------------
+
+    html +=
+        '<div class="titulo">' +
+        'Token' +
+        '</div>';
+
+
+    html +=
+        '<div class="linha">' +
+        '<strong>' +
+        escaparHTML(
+            dados.token
+        ) +
+        '</strong>' +
+        '</div>';
+
+
+    // --------------------------------------------------------
+    // PROBABILIDADE
+    // --------------------------------------------------------
+
+    html +=
+        '<div class="linha">' +
+        'Probabilidade: ' +
+        formatarProbabilidade(
+            dados.probabilidade
+        ) +
+        '</div>';
+
+
+    // --------------------------------------------------------
+    // LOGPROB
+    // --------------------------------------------------------
+
+    html +=
+        '<div class="linha">' +
+        'Logprob: ' +
+        formatarLogprob(
+            dados.logprob
+        ) +
+        '</div>';
+
+
+    // --------------------------------------------------------
+    // ALTERNATIVAS
+    // --------------------------------------------------------
+
+    if (
+        dados.alternativas &&
+        dados.alternativas.length > 0
+    ) {
+
+        html +=
+            '<div class="alternativas">';
+
+
+        html +=
+            '<div>' +
+            '<strong>' +
+            'Alternativas:' +
+            '</strong>' +
+            '</div>';
+
+
+        dados.alternativas.forEach(
+            function(alternativa) {
+
+                html +=
+                    '<div class="alternativa">' +
+
+                    escaparHTML(
+                        alternativa.token
+                    ) +
+
+                    " — " +
+
+                    formatarProbabilidade(
+                        alternativa.probabilidade
+                    ) +
+
+                    "</div>";
+            }
+        );
+
+
+        html +=
+            '</div>';
+    }
+
+
+    tooltip.innerHTML =
+        html;
+
+
+    tooltip.style.display =
+        "block";
+
+
+    // --------------------------------------------------------
+    // POSICIONAMENTO
+    // --------------------------------------------------------
+
+    const rect =
+        elemento.getBoundingClientRect();
+
+
+    const margem = 10;
+
+
+    let esquerda =
+        rect.left;
+
+
+    let topo =
+        rect.top -
+        tooltip.offsetHeight -
+        margem;
+
+
+    // --------------------------------------------------------
+    // SE NÃO HOUVER ESPAÇO ACIMA
+    // --------------------------------------------------------
+
+    if (
+        topo < margem
+    ) {
+
+        topo =
+            rect.bottom +
+            margem;
+    }
+
+
+    // --------------------------------------------------------
+    // LIMITE DIREITO
+    // --------------------------------------------------------
+
+    if (
+        esquerda +
+        tooltip.offsetWidth +
+        margem
+        >
+        window.innerWidth
+    ) {
+
+        esquerda =
+            window.innerWidth -
+            tooltip.offsetWidth -
+            margem;
+    }
+
+
+    // --------------------------------------------------------
+    // LIMITE ESQUERDO
+    // --------------------------------------------------------
+
+    if (
+        esquerda < margem
+    ) {
+
+        esquerda =
+            margem;
+    }
+
+
+    tooltip.style.left =
+        esquerda + "px";
+
+
+    tooltip.style.top =
+        topo + "px";
+}
+
+
+// ============================================================
+// ESCONDER TOOLTIP
+// ============================================================
+
+function esconderTooltip() {
+
+    tooltip.style.display =
+        "none";
+}
+
+
+// ============================================================
+// CRIAR RESPOSTA COLORIDA
+// ============================================================
+
+function criarResposta(
+    dados
+) {
+
+    respostaElemento.innerHTML =
+        "";
+
+
+    dados.tokens.forEach(
+        function(token) {
+
+            const span =
+                document.createElement(
+                    "span"
+                );
+
+
+            // ------------------------------------------------
+            // CLASSE
+            // ------------------------------------------------
+
+            span.className =
+                "token";
+
+
+            // ------------------------------------------------
+            // TEXTO
+            // ------------------------------------------------
+
+            span.textContent =
+                token.token;
+
+
+            // ------------------------------------------------
+            // DADOS DO TOKEN
+            // ------------------------------------------------
+
+            span._tokenData =
+                token;
+
+
+            // ------------------------------------------------
+            // COR DE ACORDO COM A PROBABILIDADE
+            // ------------------------------------------------
+
+            span.style.backgroundColor =
+                corDoToken(
+                    token.probabilidade
+                );
+
+
+            // ------------------------------------------------
+            // HOVER
+            // ------------------------------------------------
+
+            span.addEventListener(
+                "mouseenter",
+                function() {
+
+                    mostrarTooltip(
+                        this,
+                        this._tokenData
+                    );
+                }
+            );
+
+
+            span.addEventListener(
+                "mouseleave",
+                function() {
+
+                    esconderTooltip();
+                }
+            );
+
+
+            // ------------------------------------------------
+            // ADICIONAR À RESPOSTA
+            // ------------------------------------------------
+
+            respostaElemento.appendChild(
+                span
+            );
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // CONTADOR
+    // --------------------------------------------------------
+
+    contadorElemento.textContent =
+        dados.tokens.length +
+        " tokens analisados";
+}
+
+
+// ============================================================
+// FAZER PERGUNTA
+// ============================================================
+
+async function fazerPergunta() {
+
+    const pergunta =
+        perguntaInput.value.trim();
+
+
+    const arquivo =
+        arquivoInput.files[0];
+
+
+    // --------------------------------------------------------
+    // VERIFICAR PERGUNTA
+    // --------------------------------------------------------
+
+    if (!pergunta) {
+
+        alert(
+            "Digite uma pergunta."
+        );
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // DESABILITAR BOTÃO
+    // --------------------------------------------------------
+
+    botaoPerguntar.disabled =
+        true;
+
+
+    statusElemento.textContent =
+        "Consultando o modelo...";
+
+
+    respostaElemento.textContent =
+        "";
+
+
+    contadorElemento.textContent =
+        "Processando tokens...";
+
+
+    // --------------------------------------------------------
+    // FORM DATA
+    // --------------------------------------------------------
+
+    const formData =
+        new FormData();
+
+
+    formData.append(
+        "pergunta",
+        pergunta
+    );
+
+
+    // --------------------------------------------------------
+    // DOCUMENTO OPCIONAL
+    // --------------------------------------------------------
+
+    if (arquivo) {
+
+        formData.append(
+            "arquivo",
+            arquivo
+        );
+    }
+
+
+    try {
+
+        // ----------------------------------------------------
+        // CONSULTAR FLASK
+        // ----------------------------------------------------
+
+        const resposta =
+            await fetch(
+                "/api/perguntar",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+        // ----------------------------------------------------
+        // TRANSFORMAR EM JSON
+        // ----------------------------------------------------
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                dados.erro || "Erro ao consultar a API."
+            );
+        }
+
+        dadosUltimaResposta = dados;
+        botaoBaixarDados.disabled = false;
+        // ----------------------------------------------------
+        // ERRO
+        // ----------------------------------------------------
+
+        if (!resposta.ok) {
+
+            throw new Error(
+                dados.erro ||
+                "Erro ao consultar a API."
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // MOSTRAR RESPOSTA
+        // ----------------------------------------------------
+
+        criarResposta(dados);
+        desenharGraficoTokens(dados);
+
+
+        // ----------------------------------------------------
+        // STATUS
+        // ----------------------------------------------------
+
+        statusElemento.textContent =
+            "Resposta gerada.";
+
+
+    } catch (erro) {
+
+        console.error(
+            erro
+        );
+
+
+        respostaElemento.textContent =
+            "Erro: " +
+            erro.message;
+
+
+        contadorElemento.textContent =
+            "";
+
+
+        statusElemento.textContent =
+            "Não foi possível gerar a resposta.";
+    }
+
+
+    // --------------------------------------------------------
+    // REATIVAR BOTÃO
+    // --------------------------------------------------------
+
+    botaoPerguntar.disabled =
+        false;
+}
+
+
+// ============================================================
+// BOTÃO
+// ============================================================
+
+botaoPerguntar.addEventListener(
+    "click",
+    fazerPergunta
+);
+
+
+// ============================================================
+// CTRL + ENTER
+// ============================================================
+
+perguntaInput.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.ctrlKey &&
+            event.key === "Enter"
+        ) {
+
+            fazerPergunta();
+        }
+    }
+);
+
+
+</script>
+
+
+</body>
+
+</html>
